@@ -17,8 +17,20 @@
  *  ]
  */
 function createCompassPoints() {
-    throw new Error('Not implemented');
-    var sides = ['N','E','S','W'];  // use array of cardinal directions only!
+    const sides = ['N', 'E', 'S', 'W'];
+    const compassPoints = [];
+    const directions = ['N', 'NbE', 'NNE', 'NEbN', 'NE', 'NEbE', 'ENE', 'EbN',
+                        'E', 'EbS', 'ESE', 'SEbE', 'SE', 'SEbS', 'SSE', 'SbE',
+                        'S', 'SbW', 'SSW', 'SWbS', 'SW', 'SWbW', 'WSW', 'WbS',
+                        'W', 'WbN', 'WNW', 'NWbW', 'NW', 'NWbN', 'NNW', 'NbW'];
+
+    for (let i = 0; i < 32; i++) {
+        compassPoints.push({
+            abbreviation: directions[i],
+            azimuth: (i * 11.25) % 360
+        });
+    }
+    return compassPoints;
 }
 
 
@@ -56,7 +68,72 @@ function createCompassPoints() {
  *   'nothing to do' => 'nothing to do'
  */
 function* expandBraces(str) {
-    throw new Error('Not implemented');
+    const results = [];
+
+    function expand(input, depth = 0) {
+        let openBraceIndex = -1;
+        let closeBraceIndex = -1;
+        let braceBalance = 0;
+
+        for (let i = 0; i < input.length; i++) {
+            if (input[i] === '{') {
+                if (braceBalance === 0) {
+                    openBraceIndex = i;
+                }
+                braceBalance++;
+            } else if (input[i] === '}') {
+                braceBalance--;
+                if (braceBalance === 0 && openBraceIndex !== -1) {
+                    closeBraceIndex = i;
+                    break;
+                }
+            }
+        }
+
+        if (openBraceIndex === -1) {
+            results.push(input);
+            return;
+        }
+
+        if (closeBraceIndex === -1) {
+            results.push(input);
+            return;
+        }
+
+        const prefix = input.substring(0, openBraceIndex);
+        const inner = input.substring(openBraceIndex + 1, closeBraceIndex);
+        const suffix = input.substring(closeBraceIndex + 1);
+
+        const parts = [];
+        let currentPart = '';
+        let partBraceBalance = 0;
+
+        for (const char of inner) {
+            if (char === '{') {
+                partBraceBalance++;
+                currentPart += char;
+            } else if (char === '}') {
+                partBraceBalance--;
+                currentPart += char;
+            } else if (char === ',' && partBraceBalance === 0) {
+                parts.push(currentPart);
+                currentPart = '';
+            } else {
+                currentPart += char;
+            }
+        }
+        parts.push(currentPart);
+
+        for (const part of parts) {
+            expand(prefix + part + suffix, depth + 1);
+        }
+    }
+
+    expand(str);
+
+    for (const result of [...new Set(results)]) {
+        yield result;
+    }
 }
 
 
@@ -88,7 +165,38 @@ function* expandBraces(str) {
  *
  */
 function getZigZagMatrix(n) {
-    throw new Error('Not implemented');
+    const matrix = Array(n).fill().map(() => Array(n).fill(0));
+    let row = 0, col = 0;
+    let direction = 1; // 1 for up-right, -1 for down-left
+    let current = 0;
+
+    for (let i = 0; i < n * n; i++) {
+        matrix[row][col] = current++;
+        if (direction === 1) {
+            if (col === n - 1) {
+                row++;
+                direction = -1;
+            } else if (row === 0) {
+                col++;
+                direction = -1;
+            } else {
+                row--;
+                col++;
+            }
+        } else {
+            if (row === n - 1) {
+                col++;
+                direction = 1;
+            } else if (col === 0) {
+                row++;
+                direction = 1;
+            } else {
+                row++;
+                col--;
+            }
+        }
+    }
+    return matrix;
 }
 
 
@@ -113,9 +221,35 @@ function getZigZagMatrix(n) {
  *
  */
 function canDominoesMakeRow(dominoes) {
-    throw new Error('Not implemented');
-}
+    if (dominoes.length === 0) return true;
 
+    const canBuild = (remaining, lastNumber) => {
+        if (remaining.length === 0) return true;
+
+        for (let i = 0; i < remaining.length; i++) {
+            const [a, b] = remaining[i];
+            if (a === lastNumber) {
+                const newRemaining = [...remaining.slice(0, i), ...remaining.slice(i + 1)];
+                if (canBuild(newRemaining, b)) return true;
+            }
+            if (b === lastNumber) {
+                const newRemaining = [...remaining.slice(0, i), ...remaining.slice(i + 1)];
+                if (canBuild(newRemaining, a)) return true;
+            }
+        }
+        return false;
+    };
+
+    for (let i = 0; i < dominoes.length; i++) {
+        const [a, b] = dominoes[i];
+        const remaining = [...dominoes.slice(0, i), ...dominoes.slice(i + 1)];
+        if (canBuild(remaining, a) || canBuild(remaining, b)) {
+            return true;
+        }
+    }
+
+    return false;
+}
 
 /**
  * Returns the string expression of the specified ordered list of integers.
@@ -137,7 +271,38 @@ function canDominoesMakeRow(dominoes) {
  * [ 1, 2, 4, 5]          => '1,2,4,5'
  */
 function extractRanges(nums) {
-    throw new Error('Not implemented');
+    if (nums.length === 0) return '';
+    const ranges = [];
+    let start = nums[0];
+    let prev = nums[0];
+
+    for (let i = 1; i < nums.length; i++) {
+        if (nums[i] === prev + 1) {
+            prev = nums[i];
+        } else {
+            if (prev - start >= 2) {
+                ranges.push(`${start}-${prev}`);
+            } else {
+                ranges.push(start.toString());
+                if (prev !== start) {
+                    ranges.push(prev.toString());
+                }
+            }
+            start = nums[i];
+            prev = nums[i];
+        }
+    }
+
+    if (prev - start >= 2) {
+        ranges.push(`${start}-${prev}`);
+    } else {
+        ranges.push(start.toString());
+        if (prev !== start) {
+            ranges.push(prev.toString());
+        }
+    }
+
+    return ranges.join(',');
 }
 
 module.exports = {

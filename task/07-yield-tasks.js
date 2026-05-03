@@ -33,9 +33,13 @@
  *
  */
 function* get99BottlesOfBeer() {
-    throw new Error('Not implemented');
+    for (let i = 99; i >= 1; i--) {
+        yield `${i} bottle${i !== 1 ? 's' : ''} of beer on the wall, ${i} bottle${i !== 1 ? 's' : ''} of beer.`;
+        yield `Take one down and pass it around, ${i - 1 === 0 ? 'no more bottles' : `${i - 1} bottle${i - 1 !== 1 ? 's' : ''}`} of beer on the wall.`;
+    }
+    yield 'No more bottles of beer on the wall, no more bottles of beer.';
+    yield 'Go to the store and buy some more, 99 bottles of beer on the wall.';
 }
-
 
 /**
  * Returns the Fibonacci sequence:
@@ -47,7 +51,11 @@ function* get99BottlesOfBeer() {
  *
  */
 function* getFibonacciSequence() {
-    throw new Error('Not implemented');
+    let [a, b] = [0, 1];
+    while (true) {
+        yield a;
+        [a, b] = [b, a + b];
+    }
 }
 
 
@@ -82,9 +90,22 @@ function* getFibonacciSequence() {
  *
  */
 function* depthTraversalTree(root) {
-    throw new Error('Not implemented');
-}
+    const stack = [root];
 
+    while (stack.length > 0) {
+        const node = stack.pop();
+        yield node;
+
+        if (node.children) {
+            // Добавляем детей в стек в обратном порядке.
+            // Это нужно, чтобы первый ребенок из массива оказался на вершине стека
+            // и был обработан следующим (как того требует DFS).
+            for (let i = node.children.length - 1; i >= 0; i--) {
+            stack.push(node.children[i]);
+            }
+        }
+    }
+}
 
 /**
  * Traverses a tree using the breadth-first strategy
@@ -108,7 +129,14 @@ function* depthTraversalTree(root) {
  *
  */
 function* breadthTraversalTree(root) {
-    throw new Error('Not implemented');
+    const queue = [root];
+    while (queue.length > 0) {
+        const node = queue.shift();
+        yield node;
+        if (node.children) {
+            queue.push(...node.children);
+        }
+    }
 }
 
 
@@ -126,7 +154,29 @@ function* breadthTraversalTree(root) {
  *   [ 1, 3, 5, ... ], [ -1 ] => [ -1, 1, 3, 5, ...]
  */
 function* mergeSortedSequences(source1, source2) {
-    throw new Error('Not implemented');
+    const iter1 = source1();
+    const iter2 = source2();
+
+    let { value: val1, done: done1 } = iter1.next();
+    let { value: val2, done: done2 } = iter2.next();
+
+    while (!done1 || !done2) {
+        if (done1) {
+            yield val2;
+            ({ value: val2, done: done2 } = iter2.next());
+        } else if (done2) {
+            yield val1;
+            ({ value: val1, done: done1 } = iter1.next());
+        } else {
+            if (val1 <= val2) {
+                yield val1;
+                ({ value: val1, done: done1 } = iter1.next());
+            } else {
+                yield val2;
+                ({ value: val2, done: done2 } = iter2.next());
+            }
+        }
+    }
 }
 
 

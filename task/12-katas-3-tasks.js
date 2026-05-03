@@ -28,9 +28,38 @@
  *   'NULL'      => false 
  */
 function findStringInSnakingPuzzle(puzzle, searchStr) {
-    throw new Error('Not implemented');
-}
+    if (!searchStr) return true;
+    const rows = puzzle.length;
+    const cols = puzzle[0].length;
+    const directions = [[-1, 0], [1, 0], [0, -1], [0, 1]]; // Вверх, вниз, влево, вправо
 
+    for (let i = 0; i < rows; i++) {
+        for (let j = 0; j < cols; j++) {
+            if (puzzle[i][j] === searchStr[0]) {
+                const visited = Array.from({ length: rows }, () => new Array(cols).fill(false));
+                if (dfs(i, j, 0, visited)) {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+
+    function dfs(i, j, index, visited) {
+        if (index === searchStr.length) return true;
+        if (i < 0 || i >= rows || j < 0 || j >= cols || visited[i][j] || puzzle[i][j] !== searchStr[index]) {
+            return false;
+        }
+        visited[i][j] = true;
+        for (const [di, dj] of directions) {
+            if (dfs(i + di, j + dj, index + 1, visited)) {
+                return true;
+            }
+        }
+        visited[i][j] = false; // Отмена отметки для других путей
+        return false;
+    }
+}
 
 /**
  * Returns all permutations of the specified string.
@@ -45,7 +74,16 @@ function findStringInSnakingPuzzle(puzzle, searchStr) {
  *    'abc' => 'abc','acb','bac','bca','cab','cba'
  */
 function* getPermutations(chars) {
-    throw new Error('Not implemented');
+    if (chars.length === 0) yield '';
+    else {
+        for (let i = 0; i < chars.length; i++) {
+            const currentChar = chars[i];
+            const remainingChars = chars.slice(0, i) + chars.slice(i + 1);
+            for (const perm of getPermutations(remainingChars)) {
+                yield currentChar + perm;
+            }
+        }
+    }
 }
 
 
@@ -65,8 +103,23 @@ function* getPermutations(chars) {
  *    [ 1, 6, 5, 10, 8, 7 ] => 18  (buy at 1,6,5 and sell all at 10)
  */
 function getMostProfitFromStockQuotes(quotes) {
-    throw new Error('Not implemented');
+    let maxProfit = 0;
+    let currentMax = 0;
+
+    // Идем с конца массива к началу
+    for (let i = quotes.length - 1; i >= 0; i--) {
+        if (quotes[i] > currentMax) {
+        // Обновляем локальный пик, по которому будем продавать
+        currentMax = quotes[i];
+        } else {
+        // Если цена ниже пика, "покупаем" сегодня и "продаем" по currentMax
+        maxProfit += currentMax - quotes[i];
+        }
+    }
+
+    return maxProfit;
 }
+
 
 
 /**
@@ -84,21 +137,45 @@ function getMostProfitFromStockQuotes(quotes) {
  * 
  */
 function UrlShortener() {
-    this.urlAllowedChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"+
-                           "abcdefghijklmnopqrstuvwxyz"+
-                           "0123456789-_.~!*'();:@&=+$,/?#[]";
+    this.urlAllowedChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
+                           "abcdefghijklmnopqrstuvwxyz" +
+                           "0123456789-_.~";
+    this.urlMap = new Map(); // Для хранения соответствий
+    this.codeMap = new Map(); // Для обратного соответствия
 }
 
 UrlShortener.prototype = {
-
     encode: function(url) {
-        throw new Error('Not implemented');
+        // Если URL уже был сокращён, возвращаем существующий код
+        if (this.urlMap.has(url)) {
+            return this.urlMap.get(url);
+        }
+
+        // Генерируем уникальный код
+        let code;
+        do {
+            // Используем хэш URL и берём первые 8 символов
+            const hash = require('crypto')
+                .createHash('sha256')
+                .update(url)
+                .digest('hex')
+                .substring(0, 8);
+
+            // Убираем символы, не входящие в urlAllowedChars
+            code = hash.replace(/[^ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_.~]/g, '');
+        } while (this.codeMap.has(code)); // Проверяем уникальность
+
+        // Сохраняем соответствие
+        this.urlMap.set(url, code);
+        this.codeMap.set(code, url);
+
+        return code;
     },
-    
+
     decode: function(code) {
-        throw new Error('Not implemented');
-    } 
-}
+        return this.codeMap.get(code) || null;
+    }
+};
 
 
 module.exports = {

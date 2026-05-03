@@ -23,9 +23,13 @@
  *    console.log(r.getArea());   // => 200
  */
 function Rectangle(width, height) {
-    throw new Error('Not implemented');
+    this.width = width;
+    this.height = height;
 }
 
+Rectangle.prototype.getArea = function() {
+    return this.width * this.height;
+};
 
 /**
  * Returns the JSON representation of specified object
@@ -38,9 +42,8 @@ function Rectangle(width, height) {
  *    { width: 10, height : 20 } => '{"height":10,"width":20}'
  */
 function getJSON(obj) {
-    throw new Error('Not implemented');
+    return JSON.stringify(obj);
 }
-
 
 /**
  * Returns the object of specified type from JSON representation
@@ -54,7 +57,9 @@ function getJSON(obj) {
  *
  */
 function fromJSON(proto, json) {
-    throw new Error('Not implemented');
+    const obj = JSON.parse(json);
+    Object.setPrototypeOf(obj, proto);
+    return obj;
 }
 
 
@@ -106,35 +111,86 @@ function fromJSON(proto, json) {
  *  For more examples see unit tests.
  */
 
+class Selector {
+    constructor() {
+        this.parts = [];
+        this.str = '';
+        this._combined = null;
+    }
+
+    _add(type, symbol, value) {
+        if (this._combined) {
+            throw new Error('Cannot extend combined selector');
+        }
+
+        // 1. Проверка уникальности
+        const uniques = ['element', 'id', 'pseudoElement'];
+        if (uniques.includes(type) && this.parts.includes(type)) {
+            throw new Error('Element, id and pseudo-element should not occur more then one time inside the selector');
+        }
+
+        // 2. Проверка порядка
+        const order = ['element', 'id', 'class', 'attr', 'pseudoClass', 'pseudoElement'];
+        const typeIndex = order.indexOf(type);
+        const lastTypeIndex = this.parts.length > 0 
+            ? order.indexOf(this.parts[this.parts.length - 1]) 
+            : -1;
+
+        if (typeIndex < lastTypeIndex) {
+            throw new Error('Selector parts should be arranged in the following order: element, id, class, attribute, pseudo-class, pseudo-element');
+        }
+
+        this.parts.push(type);
+        this.str += `${symbol}${value}`;
+        return this;
+    }
+
+    element(v) { return this._add('element', '', v); }
+    id(v) { return this._add('id', '#', v); }
+    class(v) { return this._add('class', '.', v); }
+    attr(v) { return this._add('attr', '[', `${v}]`); }
+    pseudoClass(v) { return this._add('pseudoClass', ':', v); }
+    pseudoElement(v) { return this._add('pseudoElement', '::', v); }
+
+    stringify() {
+        return this._combined || this.str;
+    }
+}
+
 const cssSelectorBuilder = {
+    element(v) { return new Selector().element(v); },
+    id(v) { return new Selector().id(v); },
+    class(v) { return new Selector().class(v); },
+    attr(v) { return new Selector().attr(v); },
+    pseudoClass(v) { return new Selector().pseudoClass(v); },
+    pseudoElement(v) { return new Selector().pseudoElement(v); },
 
-    element: function(value) {
-        throw new Error('Not implemented');
-    },
+    combine(s1, combinator, s2) {
+        const res = new Selector();
+        // В тестах для пустого комбинатора (' ') ожидается 3 пробела
+        const sep = combinator === ' ' ? '   ' : ` ${combinator} `;
+        res._combined = `${s1.stringify()}${sep}${s2.stringify()}`;
+        return res;
+    }
+};
 
-    id: function(value) {
-        throw new Error('Not implemented');
+module.exports = {
+    cssSelectorBuilder,
+    Rectangle: class {
+        constructor(w, h) {
+            this.width = w;
+            this.height = h;
+        }
+        getArea() {
+            return this.width * this.height;
+        }
     },
-
-    class: function(value) {
-        throw new Error('Not implemented');
-    },
-
-    attr: function(value) {
-        throw new Error('Not implemented');
-    },
-
-    pseudoClass: function(value) {
-        throw new Error('Not implemented');
-    },
-
-    pseudoElement: function(value) {
-        throw new Error('Not implemented');
-    },
-
-    combine: function(selector1, combinator, selector2) {
-        throw new Error('Not implemented');
-    },
+    getJSON: (obj) => JSON.stringify(obj),
+    fromJSON: (proto, json) => {
+        const obj = JSON.parse(json);
+        Object.setPrototypeOf(obj, proto);
+        return obj;
+    }
 };
 
 
